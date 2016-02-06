@@ -4,11 +4,11 @@ open System
 open System.Linq
 open Microsoft.FSharp.Reflection
 
-type internal NameAttribute(name : string) =
-    inherit Attribute()
-    member a.Name = name
-
 module internal Reflection =
+    type internal NameAttribute(name : string) =
+        inherit Attribute()
+        member a.Name = name
+
     let private getInfo v =
         let t = v.GetType()
         if not (FSharpType.IsUnion(t)) then

@@ -60,9 +60,20 @@ type SessionControl =
 type Dimension (w : uint32, h : uint32) =
     override r.ToString() = String.Join ("x", w.ToString(), h.ToString())
 
+type Bits (b : uint16) =
+    override n.ToString() = b.ToString() + "-bits"
+
+type TimeStamp (t : DateTime) =
+    new () = TimeStamp DateTime.Now
+
+    // TimeStamp is reported as milliseconds passed since the occurrance
+    override d.ToString() = let diff = DateTime.Now - t
+                            let millis = diff.Ticks / TimeSpan.TicksPerMillisecond
+                            millis.ToString()
+
 [<CustomEquality; CustomComparison>]
 type OptionalEventParam = 
-    | [<Name "qt">]    QueueTime of DateTime
+    | [<Name "qt">]    QueueTime of TimeStamp
     | [<Name "sc">]    SessionControl of SessionControl
     | [<Name "dr">]    Referrer of Uri
     | [<Name "cn">]    CampaignName of string
@@ -76,7 +87,7 @@ type OptionalEventParam =
     | [<Name "sr">]    ScreenResolution of Dimension
     | [<Name "vp">]    ViewportSize of Dimension
     | [<Name "de">]    DocumentEncoding of string
-    | [<Name "sd">]    ScreenColorBits of uint16
+    | [<Name "sd">]    ScreenColorBits of Bits
     | [<Name "ul">]    UserLanguage of string
     | [<Name "ni">]    NonInteractionHit of bool
     | [<Name "dl">]    DocumentLocation of Uri
@@ -85,13 +96,7 @@ type OptionalEventParam =
     // dt DocumentTitle string
     // ... TODO
 
-    override p.ToString() = match p with
-                            | QueueTime t -> 
-                                let diff = DateTime.Now - t
-                                let millis = diff.Ticks / TimeSpan.TicksPerMillisecond
-                                millis.ToString()
-                            | ScreenColorBits b -> b.ToString() + "-bits"
-                            | o -> getValue o
+    override p.ToString() = getValue p
 
     // Same semantics as OptionalClientParam
     override p.Equals q = typesEqual p q
