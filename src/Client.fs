@@ -45,13 +45,13 @@ type OptionalClientParam =
 
 
 type ClientParams = { 
-        [<Name "tid">] TrackingPropertyId : string
-        [<Name "cid">] ClientId : Guid
-        [<Name "aip">] AnonymizeIp : bool
-        [<Name "ds">]  DataSource : DataSource
-        UseCacheBuster : bool
-        OptionalParams : OptionalClientParam Set
-    }
+                      [<Name "tid">] TrackingPropertyId : string
+                      [<Name "cid">] ClientId : Guid
+                      [<Name "aip">] AnonymizeIp : bool
+                      [<Name "ds">]  DataSource : DataSource
+                      UseCacheBuster : bool
+                      OptionalParams : OptionalClientParam Set
+                    }
 
 type SessionControl = 
     | Start | End
