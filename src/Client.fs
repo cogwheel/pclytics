@@ -63,17 +63,9 @@ type Dimension (w : uint32, h : uint32) =
 type Bits (b : uint16) =
     override n.ToString() = b.ToString() + "-bits"
 
-type TimeStamp (t : DateTime) =
-    new () = TimeStamp DateTime.Now
-
-    // TimeStamp is reported as milliseconds passed since the occurrance
-    override d.ToString() = let diff = DateTime.Now - t
-                            let millis = diff.Ticks / TimeSpan.TicksPerMillisecond
-                            millis.ToString()
-
 [<CustomEquality; CustomComparison>]
 type OptionalEventParam = 
-    | [<Name "qt">]    QueueTime of TimeStamp
+    | [<Name "qt">]    QueueTime of DateTime
     | [<Name "sc">]    SessionControl of SessionControl
     | [<Name "dr">]    Referrer of Uri
     | [<Name "cn">]    CampaignName of string
@@ -96,7 +88,13 @@ type OptionalEventParam =
     // dt DocumentTitle string
     // ... TODO
 
-    override p.ToString() = getValue p
+    override p.ToString() = match p with
+                            // TimeStamp is reported as milliseconds passed since the occurrance
+                            | QueueTime t -> let diff = DateTime.Now - t
+                                             let millis = diff.Ticks / TimeSpan.TicksPerMillisecond
+                                             millis.ToString()
+                            | o -> getValue o
+
 
     // Same semantics as OptionalClientParam
     override p.Equals q = typesEqual p q
