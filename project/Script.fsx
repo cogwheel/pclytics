@@ -6,5 +6,7 @@
 //
 //   git update-index --assume-unchanged project/Script.fsx
 
+#load "../src/Reflection.fs"
 #load "../src/Client.fs"
 
+open pclytics
