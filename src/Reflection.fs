@@ -2,6 +2,7 @@ namespace pclytics
 
 open System
 open System.Linq
+open System.Net
 open Microsoft.FSharp.Reflection
 
 module internal Reflection =
@@ -26,29 +27,27 @@ module internal Reflection =
         | Some name -> name
         | None -> case.Name
 
+    let toPayloadString (o: obj) = if o.GetType() = typeof<bool> then
+                                       Convert.ToInt32(o :?> bool).ToString()
+                                   else
+                                       o.ToString()
+
     let private getField (fields : obj[]) =
         if fields.Length > 0 then
-            let field = fields.[0]
-            if field.GetType() = typeof<bool> then
-                Some (Convert.ToInt32(field :?> bool).ToString())
-            else
-                Some (fields.[0].ToString())
+            Some (toPayloadString fields.[0])
         else
             None
 
     let getValue v =
         let case, fields = getInfo v
         match getField fields with
-        | Some name -> name
+        | Some field -> field
         | None -> match getName case with
                   | Some name -> name
                   | None -> case.Name
 
-    let private makePair name (value : obj) =
-        if value.GetType() = typeof<bool> then
-            name, Convert.ToInt32(value :?> bool).ToString()
-        else
-            name, value.ToString()
+    let private makePair name value =
+        WebUtility.UrlEncode name + "=" + WebUtility.UrlEncode (toPayloadString value)
 
     let getRecordPairs r =
         let t = r.GetType()
@@ -61,10 +60,7 @@ module internal Reflection =
                   yield makePair name value
             }
 
-    let getUnionPairs us = seq {
-                                 for u in us do
-                                 yield getKey u, getValue u
-                               }
+    let getUnionPairs us = us |> Seq.map (fun u -> makePair (getKey u) (getValue u))
 
     let typesEqual p q = p.GetType() = q.GetType()
 

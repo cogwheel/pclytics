@@ -6,7 +6,14 @@
 //
 //   git update-index --assume-unchanged project/Script.fsx
 
+#r "System.Net.Http"
+
 #load "../src/Reflection.fs"
 #load "../src/Client.fs"
 
+open System
+open System.IO
+open System.Net
+
 open pclytics
+open pclytics.Reflection

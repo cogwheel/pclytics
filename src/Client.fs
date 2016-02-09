@@ -2,7 +2,7 @@
 
 open System
 open System.Net
-open System.Collections.Generic
+open System.Net.Http
 
 open pclytics.Reflection
 
@@ -30,7 +30,6 @@ type DataSource =
 type OptionalClientParam =
     | [<Name "uip">]   IpOverride of string
     | [<Name "uid">]   UserId of string
-    | [<Name "ua">]    UserAgent of string
     | [<Name "geoid">] GeographicalId of string
     | [<Name "je">]    JavaEnabled of bool
     | [<Name "fl">]    FlashVersion of string
@@ -49,7 +48,8 @@ type ClientParams = {
                       [<Name "cid">] ClientId : Guid
                       [<Name "aip">] AnonymizeIp : bool
                       [<Name "ds">]  DataSource : DataSource
-                      UseCacheBuster : bool
+                      [<Name "ua">]  UserAgent : string
+                      [<Name "an">]  ApplicationName : string
                       OptionalParams : OptionalClientParam Set
                     }
 
@@ -83,6 +83,7 @@ type OptionalEventParam =
     | [<Name "ul">]    UserLanguage of string
     | [<Name "ni">]    NonInteractionHit of bool
     | [<Name "dl">]    DocumentLocation of Uri
+    | [<Name "cd">]    ScreenName of string
     // dh DocumentHost string
     // dp DocumentPath string
     // dt DocumentTitle string
@@ -104,4 +105,32 @@ type OptionalEventParam =
 
 type EventParams = { [<Name "t">] HitType : HitType
                      OptionalParams : OptionalEventParam Set }
+
+type Client (clientParams : ClientParams) =
+    let eventProto = seq { yield "v=1"
+                           yield! getRecordPairs clientParams
+                           yield! getUnionPairs clientParams.OptionalParams }
+
+    let endpoint = "https://ssl.google-analytics.com/debug/collect"
+
+    let client = let c = new HttpClient()
+                 c.DefaultRequestHeaders.Accept.Add(new Headers.MediaTypeWithQualityHeaderValue("application/json"))
+                 c.DefaultRequestHeaders.UserAgent.ParseAdd(clientParams.UserAgent)
+                 c
+
+    member c.SendEvent eventParams =
+        let payload = seq { yield! eventProto
+                            yield! getRecordPairs eventParams
+                            yield! getUnionPairs eventParams.OptionalParams }
+                      |> Seq.reduce (fun p1 p2 -> p1 + "&" + p2)
+        async {
+            use! response = client.PostAsync(endpoint, new StringContent(payload)) |> Async.AwaitTask
+            response.EnsureSuccessStatusCode() |> ignore
+            let! content = response.Content.ReadAsStringAsync() |> Async.AwaitTask
+            return content
+        }
+
+    interface IDisposable with
+        member c.Dispose() =
+            client.Dispose()
 
