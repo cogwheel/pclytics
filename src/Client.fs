@@ -107,7 +107,8 @@ type EventParams = { [<Name "t">] HitType : HitType
                      OptionalParams : OptionalEventParam Set }
 
 type Client (clientParams : ClientParams) =
-    let eventProto = seq { yield "v=1"
+    let protocolVersion = "v=1"
+    let eventProto = seq { yield protocolVersion
                            yield! getRecordPairs clientParams
                            yield! getUnionPairs clientParams.OptionalParams }
 

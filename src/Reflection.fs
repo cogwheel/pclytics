@@ -6,45 +6,32 @@ open System.Net
 open Microsoft.FSharp.Reflection
 
 module internal Reflection =
+
     type internal NameAttribute(name : string) =
         inherit Attribute()
         member a.Name = name
-
-    let private getInfo v =
-        let t = v.GetType()
-        if not (FSharpType.IsUnion(t)) then
-            raise (ArgumentException("Value must be a discriminated union case"))
-        FSharpValue.GetUnionFields(v, t)
 
     let private getName (c : UnionCaseInfo) =
         match c.GetCustomAttributes(typeof<NameAttribute>) with
         | [|a|] -> Some (a :?> NameAttribute).Name
         | _ -> None
 
-    let getKey v = 
-        let case, _ = getInfo v
-        match getName case with
-        | Some name -> name
-        | None -> case.Name
+    let toPayloadString (o: obj) =
+        match o with
+        | :? bool as b -> Convert.ToInt32(b).ToString()
+        | o -> o.ToString()
 
-    let toPayloadString (o: obj) = if o.GetType() = typeof<bool> then
-                                       Convert.ToInt32(o :?> bool).ToString()
-                                   else
-                                       o.ToString()
-
-    let private getField (fields : obj[]) =
-        if fields.Length > 0 then
-            Some (toPayloadString fields.[0])
-        else
-            None
+    let private getCaseInfo v =
+        let t = v.GetType()
+        FSharpValue.GetUnionFields(v, t)
 
     let getValue v =
-        let case, fields = getInfo v
-        match getField fields with
-        | Some field -> field
-        | None -> match getName case with
-                  | Some name -> name
-                  | None -> case.Name
+        let case, fields = getCaseInfo v
+        match fields with
+        | [|o|] -> toPayloadString o
+        | _ -> match getName case with
+               | Some name -> name
+               | None -> case.Name
 
     let private makePair name value =
         WebUtility.UrlEncode name + "=" + WebUtility.UrlEncode (toPayloadString value)
@@ -59,6 +46,12 @@ module internal Reflection =
                   let value = FSharpValue.GetRecordField(r, f)
                   yield makePair name value
             }
+
+    let getKey v =
+        let case, _ = getCaseInfo v
+        match getName case with
+        | Some name -> name
+        | None -> case.Name
 
     let getUnionPairs us = us |> Seq.map (fun u -> makePair (getKey u) (getValue u))
 
