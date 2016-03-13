@@ -57,7 +57,8 @@ type CaseSet<'a when 'a : comparison> private (theMap : Map<int, 'a>) =
         x.InnerMap.GetHashCode()
 
     interface IComparable with
-        member x.CompareTo(_) = failwith "Not implemented yet"
+        member x.CompareTo other =
+            (theMap :> IComparable).CompareTo (other :?> 'a CaseSet).InnerMap
 
     interface ICollection<'a> with
         member x.Contains(item) =
