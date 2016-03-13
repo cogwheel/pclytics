@@ -25,13 +25,12 @@ open pclytics.Reflection
    case tag to union value *)
 
 type CaseSet<'a when 'a : comparison> private (theMap : Map<int, 'a>) =
-    do
+    new(theSeq : 'a seq) =
         (* Wish I could express this as a constraint, but it fails early
            enough for my purposes *)
         if not (FSharpType.IsUnion typeof<'a>) then
             failwith "CaseSet value type must be a discriminated union"
 
-    new(theSeq : 'a seq) =
         CaseSet(theSeq
                 |> Seq.map (fun a -> getCaseTag a, a)
                 |> Map.ofSeq)
