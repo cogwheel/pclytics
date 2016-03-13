@@ -44,11 +44,14 @@
     <Compile Include="..\src\Reflection.fs">
       <Link>Reflection.fs</Link>
     </Compile>
+    <Compile Include="..\src\ParameterTypes.fs">
+      <Link>ParameterTypes.fs</Link>
+    </Compile>
     <Compile Include="..\src\CaseSet.fs">
       <Link>CaseSet.fs</Link>
     </Compile>
-    <Compile Include="../src/Client.fs">
-      <Link>Client.fs</Link>
+    <Compile Include="..\src\HitTypes.fs">
+      <Link>HitTypes.fs</Link>
     </Compile>
     <None Include="Script.fsx" />
     <Content Include="packages.config" />
