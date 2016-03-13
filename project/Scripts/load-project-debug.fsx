@@ -3,4 +3,5 @@
 #load "load-references-debug.fsx"
 #load "../AssemblyInfo.fs"
       "../../src/Reflection.fs"
+      "../../src/CaseSet.fs"
       "../../src/Client.fs"

@@ -26,7 +26,6 @@ type DataSource =
                             | Web -> "web"
                             | Custom s -> s
 
-[<CustomEquality; CustomComparison>]
 type OptionalClientParam =
     | [<Name "uip">]   IpOverride of string
     | [<Name "uid">]   UserId of string
@@ -35,14 +34,6 @@ type OptionalClientParam =
     | [<Name "fl">]    FlashVersion of string
     override p.ToString() = getValue p
 
-    // OptionalParams are equal by name only, effectively making a set of them
-    // into a map of NameAtribute -> case value.
-    override p.Equals q = typesEqual p q
-    override p.GetHashCode () = typeHash p
-    interface IComparable with
-        member p.CompareTo(q) = hashEqual p q
-
-
 type ClientParams = { 
                       [<Name "tid">] TrackingPropertyId : string
                       [<Name "cid">] ClientId : Guid
@@ -50,24 +41,45 @@ type ClientParams = {
                       [<Name "ds">]  DataSource : DataSource
                       [<Name "ua">]  UserAgent : string
                       [<Name "an">]  ApplicationName : string
-                      OptionalParams : OptionalClientParam Set
+                      OptionalParams : OptionalClientParam CaseSet
                     }
 
 type SessionControl = 
     | Start | End
     override t.ToString() = (getValue t).ToLower()
 
-type Dimension (w : uint32, h : uint32) =
-    override r.ToString() = String.Join ("x", w.ToString(), h.ToString())
+type Dimension =
+    { Width : uint32 ; Height : uint32 }
 
-type Bits (b : uint16) =
-    override n.ToString() = b.ToString() + "-bits"
+    override r.ToString() = String.Join ("x", r.Width.ToString(), r.Height.ToString())
 
-[<CustomEquality; CustomComparison>]
+type Bits =
+    | Bits of uint16
+    override n.ToString() =
+        let (Bits b) = n
+        b.ToString() + "-bits"
+
+[<CustomComparison;CustomEquality>]
+type ComparableUri =
+    | Uri of Uri
+
+    interface IComparable with
+        member u.CompareTo other =
+            let (Uri thisUri) = u
+            let (Uri otherUri) = other :?> ComparableUri
+            thisUri.AbsoluteUri.CompareTo(otherUri.AbsoluteUri)
+
+    override u.Equals other =
+        (u :> IComparable).CompareTo(other) = 0
+
+    override u.GetHashCode () =
+        let (Uri uri) = u
+        uri.GetHashCode()
+
 type OptionalEventParam = 
     | [<Name "qt">]    QueueTime of DateTime
     | [<Name "sc">]    SessionControl of SessionControl
-    | [<Name "dr">]    Referrer of Uri
+    | [<Name "dr">]    Referrer of ComparableUri
     | [<Name "cn">]    CampaignName of string
     | [<Name "cs">]    CampaignSource of string
     | [<Name "cm">]    CampaignMedium of string
@@ -82,13 +94,12 @@ type OptionalEventParam =
     | [<Name "sd">]    ScreenColorBits of Bits
     | [<Name "ul">]    UserLanguage of string
     | [<Name "ni">]    NonInteractionHit of bool
-    | [<Name "dl">]    DocumentLocation of Uri
+    | [<Name "dl">]    DocumentLocation of ComparableUri
     | [<Name "cd">]    ScreenName of string
     // dh DocumentHost string
     // dp DocumentPath string
     // dt DocumentTitle string
     // ... TODO
-
     override p.ToString() = match p with
                             // TimeStamp is reported as milliseconds passed since the occurrance
                             | QueueTime t -> let diff = DateTime.Now - t
@@ -97,14 +108,8 @@ type OptionalEventParam =
                             | o -> getValue o
 
 
-    // Same semantics as OptionalClientParam
-    override p.Equals q = typesEqual p q
-    override p.GetHashCode () = typeHash p
-    interface IComparable with
-        member p.CompareTo(q) = hashEqual p q
-
 type EventParams = { [<Name "t">] HitType : HitType
-                     OptionalParams : OptionalEventParam Set }
+                     OptionalParams : OptionalEventParam CaseSet }
 
 type Client (clientParams : ClientParams) =
     let protocolVersion = "v=1"
@@ -119,7 +124,7 @@ type Client (clientParams : ClientParams) =
                  c.DefaultRequestHeaders.UserAgent.ParseAdd(clientParams.UserAgent)
                  c
 
-    member c.SendEvent eventParams =
+    member c.SendEventAsync eventParams =
         let payload = seq { yield! eventProto
                             yield! getRecordPairs eventParams
                             yield! getUnionPairs eventParams.OptionalParams }

@@ -44,6 +44,9 @@
     <Compile Include="..\src\Reflection.fs">
       <Link>Reflection.fs</Link>
     </Compile>
+    <Compile Include="..\src\CaseSet.fs">
+      <Link>CaseSet.fs</Link>
+    </Compile>
     <Compile Include="../src/Client.fs">
       <Link>Client.fs</Link>
     </Compile>

@@ -6,27 +6,38 @@ open System.Net
 open Microsoft.FSharp.Reflection
 
 module internal Reflection =
-
     type internal NameAttribute(name : string) =
         inherit Attribute()
         member a.Name = name
+
+    let getInfo v =
+        let t = v.GetType()
+        if not (FSharpType.IsUnion(t)) then
+            raise (ArgumentException("Value must be a discriminated union case"))
+        FSharpValue.GetUnionFields(v, t)
+
+    let inline getCaseInfo x = getInfo x |> fst
+
+    let inline getCaseTag x = (getCaseInfo x).Tag
 
     let private getName (c : UnionCaseInfo) =
         match c.GetCustomAttributes(typeof<NameAttribute>) with
         | [|a|] -> Some (a :?> NameAttribute).Name
         | _ -> None
 
+    let getKey v = 
+        let case = getCaseInfo v
+        match getName case with
+        | Some name -> name
+        | None -> case.Name
+
     let toPayloadString (o: obj) =
         match o with
         | :? bool as b -> Convert.ToInt32(b).ToString()
         | o -> o.ToString()
 
-    let private getCaseInfo v =
-        let t = v.GetType()
-        FSharpValue.GetUnionFields(v, t)
-
     let getValue v =
-        let case, fields = getCaseInfo v
+        let case, fields = getInfo v
         match fields with
         | [|o|] -> toPayloadString o
         | _ -> match getName case with
@@ -46,12 +57,6 @@ module internal Reflection =
                   let value = FSharpValue.GetRecordField(r, f)
                   yield makePair name value
             }
-
-    let getKey v =
-        let case, _ = getCaseInfo v
-        match getName case with
-        | Some name -> name
-        | None -> case.Name
 
     let getUnionPairs us = us |> Seq.map (fun u -> makePair (getKey u) (getValue u))
 
