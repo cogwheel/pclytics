@@ -18,7 +18,7 @@ type TrackingId (t : string) =
 
 type Millis = Millis of int
 
-type HostPath = { Host : string ; Path : string}
+type Dimension = { Width : uint32 ; Height : uint32 }
 
 (* Needed to store System.Uris in a CaseSet *)
 [<CustomComparison;CustomEquality>]
@@ -37,6 +37,8 @@ type ComparableUri =
     override u.GetHashCode () =
         let (Uri uri) = u
         uri.GetHashCode()
+
+type HostPath = { Host : string ; Path : string}
 
 type DocumentLocation = 
     | Url of ComparableUri

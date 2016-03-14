@@ -3,6 +3,7 @@ namespace pclytics
 open System
 
 (* Required parameters for a given hit type *)
+
 type PageViewRequired = { Location : DocumentLocation }
 
 type ScreenViewRequired = { ScreenName : string }
@@ -21,10 +22,11 @@ type TimingRequired = { Category : string
                         VariableName : string
                         Time : Millis }
 
+
 (* Optional parameters for a given hit type *)
 
 type PageViewOptional =
-    | PageName of string
+    | Title of string
 
 type ScreenViewOptional = |S
 
@@ -45,6 +47,7 @@ type EventOptional = |E
 type SocialOptional = |S
 type TimingOptional = |T
 type ExceptionOptional = |E
+
 
 (* "Others" allow you to pass parameters from other hit types along with the
    current hit *)
@@ -74,6 +77,7 @@ type EventOther = |E
 type SocialOther = |S
 type TimingOther = |T
 type ExceptionOther = |E
+
 
 (* Hits *)
 
@@ -107,6 +111,9 @@ type HitParams =
     | Exception of ExceptionHit
     | Timing of TimingHit
 
+
+(* Universal params, available for any hit type *)
+
 type IpOverride =
     | IpOverride of string
     | AnonymizeIp
@@ -115,11 +122,12 @@ type EnvironmentParams =
     | JavaEnabled of bool
     | FlashVersion of string
 
-type DataSource = Default | App | Web | Custom
+type DataSource =
+    | App of string
+    | Web
+    | Custom
 
 type SessionControl = Start | End
-
-type Dimension = { Width : uint32 ; Height : uint32 }
 
 type HitMeta = { QueueTime : DateTime option
                  SessionControl : SessionControl option
