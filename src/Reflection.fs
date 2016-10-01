@@ -4,21 +4,17 @@ open System
 open System.Linq
 open System.Net
 open Microsoft.FSharp.Reflection
-
+                                                                                                   
+/// Provides helper functions to compare and serialize unions & records
 module internal Reflection =
-    type internal NameAttribute(name : string) =
+
+    let inline private getUnionInfo v = FSharpValue.GetUnionFields(v, v.GetType())
+
+    let inline private getCaseInfo x = getUnionInfo x |> fst
+
+    type NameAttribute(name : string) =
         inherit Attribute()
         member a.Name = name
-
-    let getInfo v =
-        let t = v.GetType()
-        if not (FSharpType.IsUnion(t)) then
-            raise (ArgumentException("Value must be a discriminated union case"))
-        FSharpValue.GetUnionFields(v, t)
-
-    let inline getCaseInfo x = getInfo x |> fst
-
-    let inline getCaseTag x = (getCaseInfo x).Tag
 
     let private getName (c : UnionCaseInfo) =
         match c.GetCustomAttributes(typeof<NameAttribute>) with
@@ -37,7 +33,7 @@ module internal Reflection =
         | o -> o.ToString()
 
     let getValue v =
-        let case, fields = getInfo v
+        let case, fields = getUnionInfo v
         match fields with
         | [|o|] -> toPayloadString o
         | _ -> match getName case with
@@ -60,8 +56,4 @@ module internal Reflection =
 
     let getUnionPairs us = us |> Seq.map (fun u -> makePair (getKey u) (getValue u))
 
-    let typesEqual p q = p.GetType() = q.GetType()
-
-    let typeHash p = p.GetType().GetHashCode()
-
-    let hashEqual p q = (typeHash p).CompareTo (typeHash q)
+    let inline getCaseTag x = (getCaseInfo x).Tag
